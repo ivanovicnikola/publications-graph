@@ -8,4 +8,4 @@
 ```
 python XMLToCSV.py  dblp.xml dblp.dtd output.csv --relations author:authored_by journal:published_in publisher:published_by school:submitted_at editor:edited_by    cite:has_citation series:is_part_of
 ```
-3. Open output_article.csv in an editor and replace all \"" with an empty string
+3. Open output_article.csv in an editor and replace all \\"" with an empty string
