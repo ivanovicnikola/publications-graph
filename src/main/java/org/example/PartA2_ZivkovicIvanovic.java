@@ -98,12 +98,48 @@ public class PartA2_ZivkovicIvanovic implements AutoCloseable {
         }
     }
 
+    public void loadProceedings() {
+        System.out.println("Loading proceedings...");
+        try (var session = driver.session()) {
+            session.run(String.format("""
+                    LOAD CSV WITH HEADERS FROM 'file:///output_proceedings.csv' AS line FIELDTERMINATOR ';'
+                    WITH line LIMIT %d
+                    CALL {
+                        WITH line
+                        CREATE (:Proceeding {ID: toInteger(line.id), key: line.key, mdate: date(line.mdate), 
+                        title: line.title, volume: line.volume, year: toInteger(line.year), booktitle: line.booktitle})
+                    }
+                    IN TRANSACTIONS
+                    """, ENTITY_LIMIT));
+        }
+    }
+
+    public void loadInproceedings() {
+        System.out.println("Loading inproceedings...");
+        try (var session = driver.session()) {
+            session.run(String.format("""
+                    LOAD CSV WITH HEADERS FROM 'file:///output_inproceedings.csv' AS line FIELDTERMINATOR ';'
+                    WITH line LIMIT %d
+                    CALL {
+                        WITH line
+                        MATCH (p:Proceeding {key: line.crossref})
+                        CREATE (i:Inproceeding {ID: toInteger(line.id), key: line.key, mdate: date(line.mdate), 
+                        title: line.title, year: toInteger(line.year), booktitle: line.booktitle})
+                        CREATE (i)-[:PUBLISHED_IN]->(p)
+                    }
+                    IN TRANSACTIONS
+                    """, ENTITY_LIMIT));
+        }
+    }
+
     public static void main(String... args) {
         try (var loader = new PartA2_ZivkovicIvanovic("bolt://localhost:7687", "", "")) {
             loader.createConstraints();
             loader.loadAuthors();
             loader.loadArticles();
             loader.loadAuthoredBy();
+            loader.loadProceedings();
+            loader.loadInproceedings();
         }
     }
 }
