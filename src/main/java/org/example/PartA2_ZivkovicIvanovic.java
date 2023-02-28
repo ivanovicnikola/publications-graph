@@ -36,6 +36,13 @@ public class PartA2_ZivkovicIvanovic implements AutoCloseable {
                         REQUIRE article.ID IS UNIQUE
                         """);
             });
+            session.executeWriteWithoutResult(tx -> {
+                tx.run("""
+                        CREATE CONSTRAINT inproceedingIdConstraint IF NOT EXISTS
+                        FOR (inproceeding:Inproceeding)
+                        REQUIRE inproceeding.ID IS UNIQUE
+                        """);
+            });
         }
     }
 
@@ -86,14 +93,14 @@ public class PartA2_ZivkovicIvanovic implements AutoCloseable {
     }
 
     public void loadAuthoredBy() {
-        System.out.println("Relating articles with authors...");
+        System.out.println("Relating papers with authors...");
         try (var session = driver.session()) {
             session.run("""
                     LOAD CSV FROM 'file:///output_author_authored_by.csv' AS line FIELDTERMINATOR ';'
                     CALL {
                         WITH line
-                        MATCH (article:Article {ID: toInteger(line[0])}), (author:Author {ID: toInteger(line[1])})
-                        CREATE (article)-[:AUTHORED_BY]->(author)
+                        MATCH (paper:Article|Inproceeding {ID: toInteger(line[0])}), (author:Author {ID: toInteger(line[1])})
+                        CREATE (paper)-[:AUTHORED_BY]->(author)
                     }
                     IN TRANSACTIONS
                     """);
@@ -138,9 +145,9 @@ public class PartA2_ZivkovicIvanovic implements AutoCloseable {
             loader.createIndexes();
             loader.loadAuthors();
             loader.loadArticles();
-            loader.loadAuthoredBy();
             loader.loadProceedings();
             loader.loadInproceedings();
+            loader.loadAuthoredBy();
         }
     }
 }
