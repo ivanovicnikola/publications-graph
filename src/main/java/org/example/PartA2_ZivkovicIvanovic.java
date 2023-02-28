@@ -69,10 +69,14 @@ public class PartA2_ZivkovicIvanovic implements AutoCloseable {
             session.run(String.format("""
                     LOAD CSV WITH HEADERS FROM 'file:///output_article.csv' AS line FIELDTERMINATOR ';'
                     WITH line LIMIT %d
+                    WHERE NOT line.volume IS NULL
                     CALL {
                         WITH line
-                        CREATE (:Article {ID: toInteger(line.id), mdate: date(line.mdate), key: line.key, publtype: line.publtype,
-                            title: line.title, volume: line.volume, month: line.month, year: toInteger(line.year)})
+                        MERGE (j:Journal {journal: line.journal})
+                        MERGE (v:Volume {volume: line.volume})-[:PART_OF]->(j)
+                        CREATE (a:Article {ID: toInteger(line.id), mdate: date(line.mdate), key: line.key, publtype: line.publtype,
+                            title: line.title, month: line.month, year: toInteger(line.year)})
+                        CREATE (a)-[:PUBLISHED_IN]->(v)
                     }
                     IN TRANSACTIONS
                     """, ENTITY_LIMIT));
@@ -87,7 +91,7 @@ public class PartA2_ZivkovicIvanovic implements AutoCloseable {
                     CALL {
                         WITH line
                         MATCH (article:Article {ID: toInteger(line[0])}), (author:Author {ID: toInteger(line[1])})
-                        CREATE (article)-[:Authored_by]->(author)
+                        CREATE (article)-[:AUTHORED_BY]->(author)
                     }
                     IN TRANSACTIONS
                     """);
