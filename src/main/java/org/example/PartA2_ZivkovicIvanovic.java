@@ -3,21 +3,12 @@ package org.example;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Query;
-
-import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
-import static org.neo4j.driver.Values.parameters;
 
 public class PartA2_ZivkovicIvanovic implements AutoCloseable {
     private final Driver driver;
 
     private static final int ENTITY_LIMIT = 10000;
+    private static final int PROCEEDING_LIMIT = 1000;
 
     public PartA2_ZivkovicIvanovic(String uri, String user, String password) {
         this.driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password));
@@ -43,6 +34,17 @@ public class PartA2_ZivkovicIvanovic implements AutoCloseable {
                         CREATE CONSTRAINT articleIdConstraint IF NOT EXISTS
                         FOR (article:Article)
                         REQUIRE article.ID IS UNIQUE
+                        """);
+            });
+        }
+    }
+
+    public void createIndexes() {
+        System.out.println("Creating indexes...");
+        try (var session = driver.session()) {
+            session.executeWriteWithoutResult(tx -> {
+                tx.run("""
+                        CREATE INDEX proceedingKeyIndex IF NOT EXISTS FOR (p:Proceeding) ON (p.key)
                         """);
             });
         }
@@ -110,31 +112,30 @@ public class PartA2_ZivkovicIvanovic implements AutoCloseable {
                         title: line.title, volume: line.volume, year: toInteger(line.year), booktitle: line.booktitle})
                     }
                     IN TRANSACTIONS
-                    """, ENTITY_LIMIT));
+                    """, PROCEEDING_LIMIT));
         }
     }
 
     public void loadInproceedings() {
         System.out.println("Loading inproceedings...");
         try (var session = driver.session()) {
-            session.run(String.format("""
+            session.run("""
                     LOAD CSV WITH HEADERS FROM 'file:///output_inproceedings.csv' AS line FIELDTERMINATOR ';'
-                    WITH line LIMIT %d
                     CALL {
                         WITH line
                         MATCH (p:Proceeding {key: line.crossref})
                         CREATE (i:Inproceeding {ID: toInteger(line.id), key: line.key, mdate: date(line.mdate), 
-                        title: line.title, year: toInteger(line.year), booktitle: line.booktitle})
-                        CREATE (i)-[:PUBLISHED_IN]->(p)
+                        title: line.title, year: toInteger(line.year), booktitle: line.booktitle}) -[:PUBLISHED_IN]->(p)
                     }
                     IN TRANSACTIONS
-                    """, ENTITY_LIMIT));
+                    """);
         }
     }
 
     public static void main(String... args) {
         try (var loader = new PartA2_ZivkovicIvanovic("bolt://localhost:7687", "", "")) {
             loader.createConstraints();
+            loader.createIndexes();
             loader.loadAuthors();
             loader.loadArticles();
             loader.loadAuthoredBy();
