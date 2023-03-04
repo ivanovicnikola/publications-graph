@@ -7,8 +7,8 @@ import org.neo4j.driver.GraphDatabase;
 public class PartA2_ZivkovicIvanovic implements AutoCloseable {
     private final Driver driver;
 
-    private static final int ENTITY_LIMIT = 1000;
-    private static final int PROCEEDING_LIMIT = ENTITY_LIMIT/10;
+    private static final int ARTICLE_LIMIT = 1000;
+    private static final int PROCEEDING_LIMIT = ARTICLE_LIMIT/10;
 
     public PartA2_ZivkovicIvanovic(String uri, String user, String password) {
         this.driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password));
@@ -24,27 +24,37 @@ public class PartA2_ZivkovicIvanovic implements AutoCloseable {
         try (var session = driver.session()) {
             session.executeWriteWithoutResult(tx -> {
                 tx.run("""
-                        CREATE CONSTRAINT articleIdConstraint IF NOT EXISTS
+                        CREATE CONSTRAINT articleKeyConstraint IF NOT EXISTS
                         FOR (article:Article)
-                        REQUIRE article.ID IS UNIQUE
+                        REQUIRE article.key IS UNIQUE
                         """);
             });
             session.executeWriteWithoutResult(tx -> {
                 tx.run("""
-                        CREATE CONSTRAINT inproceedingIdConstraint IF NOT EXISTS
+                        CREATE CONSTRAINT inproceedingKeyConstraint IF NOT EXISTS
                         FOR (inproceeding:Inproceeding)
-                        REQUIRE inproceeding.ID IS UNIQUE
+                        REQUIRE inproceeding.key IS UNIQUE
                         """);
             });
-        }
-    }
-
-    public void createIndexes() {
-        System.out.println("Creating indexes...");
-        try (var session = driver.session()) {
             session.executeWriteWithoutResult(tx -> {
                 tx.run("""
-                        CREATE INDEX proceedingKeyIndex IF NOT EXISTS FOR (p:Proceeding) ON (p.key)
+                        CREATE CONSTRAINT proceedingKeyConstraint IF NOT EXISTS
+                        FOR (proceeding:Proceeding)
+                        REQUIRE proceeding.key IS UNIQUE
+                        """);
+            });
+            session.executeWriteWithoutResult(tx -> {
+                tx.run("""
+                        CREATE CONSTRAINT authorConstraint IF NOT EXISTS
+                        FOR (author:Author)
+                        REQUIRE author.author IS UNIQUE
+                        """);
+            });
+            session.executeWriteWithoutResult(tx -> {
+                tx.run("""
+                        CREATE CONSTRAINT journalConstraint IF NOT EXISTS
+                        FOR (journal:Journal)
+                        REQUIRE journal.journal IS UNIQUE
                         """);
             });
         }
@@ -59,7 +69,7 @@ public class PartA2_ZivkovicIvanovic implements AutoCloseable {
                     CALL {
                         WITH line
                         MERGE (j:Journal {journal: line.journal})
-                        CREATE (a:Article {ID: toInteger(line.id), mdate: date(line.mdate), key: line.key, publtype: line.publtype,
+                        CREATE (a:Article {mdate: date(line.mdate), key: line.key, publtype: line.publtype,
                             title: line.title, month: line.month, year: toInteger(line.year)})
                         CREATE (a)-[:PUBLISHED_IN {volume: line.volume}]->(j)
                         WITH line, a
@@ -71,7 +81,7 @@ public class PartA2_ZivkovicIvanovic implements AutoCloseable {
                         CREATE (a)-[:CORRESPONDING_AUTHOR]->(author)
                     }
                     IN TRANSACTIONS
-                    """, ENTITY_LIMIT));
+                    """, ARTICLE_LIMIT));
         }
     }
 
@@ -83,7 +93,7 @@ public class PartA2_ZivkovicIvanovic implements AutoCloseable {
                     WITH line LIMIT %d
                     CALL {
                         WITH line
-                        CREATE (:Proceeding {ID: toInteger(line.id), key: line.key, mdate: date(line.mdate), 
+                        CREATE (:Proceeding {key: line.key, mdate: date(line.mdate), 
                         title: line.title, volume: line.volume, year: toInteger(line.year), booktitle: line.booktitle})
                     }
                     IN TRANSACTIONS
@@ -99,7 +109,7 @@ public class PartA2_ZivkovicIvanovic implements AutoCloseable {
                     CALL {
                         WITH line
                         MATCH (p:Proceeding {key: line.crossref})
-                        CREATE (i:Inproceeding {ID: toInteger(line.id), key: line.key, mdate: date(line.mdate), 
+                        CREATE (i:Inproceeding {key: line.key, mdate: date(line.mdate), 
                         title: line.title, year: toInteger(line.year), booktitle: line.booktitle}) -[:PUBLISHED_IN]->(p)
                         WITH line, i
                         UNWIND split(line.author, '|') AS authors
@@ -117,7 +127,6 @@ public class PartA2_ZivkovicIvanovic implements AutoCloseable {
     public static void main(String... args) {
         try (var loader = new PartA2_ZivkovicIvanovic("bolt://localhost:7687", "", "")) {
             loader.createConstraints();
-            loader.createIndexes();
             loader.loadArticles();
             loader.loadProceedings();
             loader.loadInproceedings();
