@@ -9,6 +9,8 @@ public class PartA2_ZivkovicIvanovic implements AutoCloseable {
 
     private static final int ARTICLE_LIMIT = 1000;
     private static final int PROCEEDING_LIMIT = ARTICLE_LIMIT/10;
+    private static final int MIN_CITATIONS = 0;
+    private static final int MAX_CITATIONS = 10;
 
     public PartA2_ZivkovicIvanovic(String uri, String user, String password) {
         this.driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password));
@@ -139,6 +141,21 @@ public class PartA2_ZivkovicIvanovic implements AutoCloseable {
         }
     }
 
+    public void generateCitations() {
+        System.out.println("Generating random citations...");
+        try (var session = driver.session()) {
+            session.executeWriteWithoutResult(tx -> {
+                tx.run(String.format("""
+                        MATCH (p1:Article|Inproceeding)
+                        WITH p1
+                        MATCH (p2:Article|Inproceeding) WHERE p1.key <> p2.key
+                        WITH p1, apoc.coll.randomItems(COLLECT(p2), apoc.coll.randomItem(range(%d, %d))) as papers
+                        FOREACH (paper IN papers | CREATE (p1)-[:CITES]->(paper))
+                        """, MIN_CITATIONS, MAX_CITATIONS));
+            });
+        }
+    }
+
     public static void main(String... args) {
         try (var loader = new PartA2_ZivkovicIvanovic("bolt://localhost:7687", "", "")) {
             loader.createConstraints();
@@ -146,6 +163,7 @@ public class PartA2_ZivkovicIvanovic implements AutoCloseable {
             loader.loadProceedings();
             loader.loadInproceedings();
             loader.generateReviews();
+            loader.generateCitations();
         }
     }
 }
