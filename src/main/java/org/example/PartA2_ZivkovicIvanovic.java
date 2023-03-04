@@ -124,12 +124,28 @@ public class PartA2_ZivkovicIvanovic implements AutoCloseable {
         }
     }
 
+    public void generateReviews() {
+        System.out.println("Generating random reviews...");
+        try (var session = driver.session()) {
+            session.executeWriteWithoutResult(tx -> {
+                tx.run("""
+                        MATCH (p:Article|Inproceeding)
+                        WITH p
+                        MATCH (a:Author) WHERE NOT (p)-[:AUTHORED_BY]->(a)
+                        WITH p, apoc.coll.randomItems(COLLECT(a), 3) as authors
+                        FOREACH (author IN authors | CREATE (p)-[:REVIEWED_BY]->(author))
+                        """);
+            });
+        }
+    }
+
     public static void main(String... args) {
         try (var loader = new PartA2_ZivkovicIvanovic("bolt://localhost:7687", "", "")) {
             loader.createConstraints();
             loader.loadArticles();
             loader.loadProceedings();
             loader.loadInproceedings();
+            loader.generateReviews();
         }
     }
 }
