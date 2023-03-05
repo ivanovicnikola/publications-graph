@@ -95,8 +95,12 @@ public class PartA2_ZivkovicIvanovic implements AutoCloseable {
                     WITH line LIMIT %d
                     CALL {
                         WITH line
-                        CREATE (:Proceeding {key: line.key, mdate: date(line.mdate), 
+                        CREATE (p:Proceeding {key: line.key, mdate: date(line.mdate), 
                         title: line.title, volume: line.volume, year: toInteger(line.year), booktitle: line.booktitle})
+                        WITH line, p
+                        WHERE line.series IS NOT NULL
+                        MERGE (s:Series {series: line.series})
+                        CREATE (p)-[:PART_OF{volume:line.volume}]->(s)
                     }
                     IN TRANSACTIONS
                     """, PROCEEDING_LIMIT));
