@@ -92,10 +92,10 @@ public class PartA3_ZivkovicIvanovic implements AutoCloseable{
 
     public static void main(String... args) {
         try(var loader = new PartA3_ZivkovicIvanovic("bolt://localhost:7687", "", "")) {
-            //loader.createReviews();
-            //loader.addAcceptanceStatus();
-            //loader.loadSchools();
-            //loader.loadCompanies();
+            loader.createReviews();
+            loader.addAcceptanceStatus();
+            loader.loadSchools();
+            loader.loadCompanies();
             loader.generateAffiliations();
         }
     }
