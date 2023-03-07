@@ -16,6 +16,26 @@ public class PartB1_ZivkovicIvanovic implements AutoCloseable {
         driver.close();
     }
 
+    public void executeQuery1() {
+        System.out.println("Executing query 1...");
+        try (Session session = driver.session())
+        {
+            Result result = session.run("""
+                    MATCH (p:Inproceeding|Article)-[c:CITES]->(i:Inproceeding)-[:PUBLISHED_IN]->(pr:Proceeding)-[:PART_OF]->(conf:Conference)
+                    WITH i, conf, COUNT(c) AS cnt
+                    ORDER BY COUNT(c) DESC
+                    WITH conf.conference AS conferences, collect(i.title) AS inproceeding, collect(cnt) AS counts
+                    RETURN conferences, inproceeding[0..3] AS inproceedings, counts[0..3] as number
+                    ORDER BY conferences
+                    """);
+            while (result.hasNext())
+            {
+                Record record = result.next();
+                System.out.println("Conference: " +  record.get("conferences").asString() + "\nInproceedings: " + record.get("inproceedings").asList() + "\nNumber of citations: " + record.get("number").asList() + "\n__________________________________________________________");
+            }
+        }
+    }
+
     public void executeQuery2() {
         System.out.println("Executing query 2...");
         try (Session session = driver.session())
@@ -36,6 +56,7 @@ public class PartB1_ZivkovicIvanovic implements AutoCloseable {
 
     public static void main(String... args) {
         try(var loader = new PartB1_ZivkovicIvanovic("bolt://localhost:7687", "", "")) {
+            loader.executeQuery1();
             loader.executeQuery2();
         }
     }
