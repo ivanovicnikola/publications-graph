@@ -59,6 +59,13 @@ public class PartA2_ZivkovicIvanovic implements AutoCloseable {
                         REQUIRE journal.journal IS UNIQUE
                         """);
             });
+            session.executeWriteWithoutResult(tx -> {
+                tx.run("""
+                        CREATE CONSTRAINT conferenceConstraint IF NOT EXISTS
+                        FOR (conference:Conference)
+                        REQUIRE conference.conference IS UNIQUE
+                        """);
+            });
         }
     }
 
@@ -96,11 +103,11 @@ public class PartA2_ZivkovicIvanovic implements AutoCloseable {
                     CALL {
                         WITH line
                         CREATE (p:Proceeding {key: line.key, mdate: date(line.mdate), 
-                        title: line.title, volume: line.volume, year: toInteger(line.year), booktitle: line.booktitle})
+                        title: line.title, volume: line.volume, year: toInteger(line.year)})
                         WITH line, p
-                        WHERE line.series IS NOT NULL
-                        MERGE (s:Series {series: line.series})
-                        CREATE (p)-[:PART_OF{volume:line.volume}]->(s)
+                        WHERE line.booktitle IS NOT NULL
+                        MERGE (c:Conference {conference: line.booktitle})
+                        CREATE (p)-[:PART_OF]->(c)
                     }
                     IN TRANSACTIONS
                     """, PROCEEDING_LIMIT));
