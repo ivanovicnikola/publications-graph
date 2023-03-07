@@ -8,7 +8,7 @@ public class PartA2_ZivkovicIvanovic implements AutoCloseable {
     private final Driver driver;
 
     private static final int ARTICLE_LIMIT = 1000;
-    private static final int PROCEEDING_LIMIT = ARTICLE_LIMIT/10;
+    private static final int PROCEEDING_LIMIT = 500;
     private static final int MIN_CITATIONS = 0;
     private static final int MAX_CITATIONS = 10;
 
@@ -133,30 +133,32 @@ public class PartA2_ZivkovicIvanovic implements AutoCloseable {
     public void generateReviews() {
         System.out.println("Generating random reviews...");
         try (var session = driver.session()) {
-            session.executeWriteWithoutResult(tx -> {
-                tx.run("""
+            session.run("""
                         MATCH (p:Article|Inproceeding)
-                        WITH p
-                        MATCH (a:Author) WHERE NOT (p)-[:AUTHORED_BY]->(a)
-                        WITH p, apoc.coll.randomItems(COLLECT(a), 3) as authors
-                        FOREACH (author IN authors | CREATE (p)-[:REVIEWED_BY]->(author))
+                        CALL {
+                            WITH p
+                            MATCH (a:Author) WHERE NOT (p)-[:AUTHORED_BY]->(a)
+                            WITH p, apoc.coll.randomItems(COLLECT(a), 3) as authors
+                            FOREACH (author IN authors | CREATE (p)-[:REVIEWED_BY]->(author))
+                        }
+                        IN TRANSACTIONS
                         """);
-            });
         }
     }
 
     public void generateCitations() {
         System.out.println("Generating random citations...");
         try (var session = driver.session()) {
-            session.executeWriteWithoutResult(tx -> {
-                tx.run(String.format("""
+            session.run(String.format("""
                         MATCH (p1:Article|Inproceeding)
-                        WITH p1
-                        MATCH (p2:Article|Inproceeding) WHERE p1.key <> p2.key
-                        WITH p1, apoc.coll.randomItems(COLLECT(p2), apoc.coll.randomItem(range(%d, %d))) as papers
-                        FOREACH (paper IN papers | CREATE (p1)-[:CITES]->(paper))
+                        CALL {
+                            WITH p1
+                            MATCH (p2:Article|Inproceeding) WHERE p1.key <> p2.key
+                            WITH p1, apoc.coll.randomItems(COLLECT(p2), apoc.coll.randomItem(range(%d, %d))) as papers
+                            FOREACH (paper IN papers | CREATE (p1)-[:CITES]->(paper))
+                        }
+                        IN TRANSACTIONS
                         """, MIN_CITATIONS, MAX_CITATIONS));
-            });
         }
     }
 
