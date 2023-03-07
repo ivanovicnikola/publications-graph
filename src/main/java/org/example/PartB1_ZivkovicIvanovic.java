@@ -24,7 +24,6 @@ public class PartB1_ZivkovicIvanovic implements AutoCloseable {
                     MATCH (c:Conference)<-[:PART_OF]-(p:Proceeding)<-[:PUBLISHED_IN]-(:Inproceeding)-[:AUTHORED_BY]-(a:Author)
                     WITH c.conference AS conference, a.author AS author, COUNT(DISTINCT p) AS cnt
                     WHERE cnt > 3
-                    WITH conference, author, cnt
                     RETURN conference, COLLECT(author) AS community
                     """);
             while (result.hasNext())
