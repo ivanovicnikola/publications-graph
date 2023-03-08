@@ -57,10 +57,31 @@ public class PartB1_ZivkovicIvanovic implements AutoCloseable {
         }
     }
 
+    public void executeQuery4() {
+        System.out.println("Executing query 4...");
+        try (Session session = driver.session())
+        {
+            Result result = session.run("""
+                    MATCH ()<-[c:CITES]-(p)-[:AUTHORED_BY]->(a:Author)
+                    WITH a.author AS author, p.title AS paper, COUNT(c) AS citations
+                    ORDER BY author, citations DESC
+                    WITH author, COLLECT(citations) AS cite_list
+                    WITH author, cite_list, [x IN range (0, SIZE(cite_list)-1) WHERE x < cite_list[x]] AS indexes
+                    RETURN author, SIZE(indexes) AS h_index
+                    """);
+            while (result.hasNext())
+            {
+                Record record = result.next();
+                System.out.println("author: " +  record.get("author").asString() + ", h-index: " + record.get("h_index").asInt());
+            }
+        }
+    }
+
     public static void main(String... args) {
         try(var loader = new PartB1_ZivkovicIvanovic("bolt://localhost:7687", "", "")) {
             loader.executeQuery1();
             loader.executeQuery2();
+            loader.executeQuery4();
         }
     }
 }
