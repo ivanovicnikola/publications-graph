@@ -18,8 +18,8 @@ public class PartA2_ZivkovicIvanovic implements AutoCloseable {
     private static final int PROCEEDING_LIMIT = 500;
     private static final int MIN_CITATIONS = 0;
     private static final int MAX_CITATIONS = 10;
-    private static final int MIN_KEYWORDS = 3;
-    private static final int MAX_KEYWORDS = 5;
+    private static final int MIN_KEYWORDS = 5;
+    private static final int MAX_KEYWORDS = 15;
 
     public PartA2_ZivkovicIvanovic(String uri, String user, String password) {
         this.driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password));

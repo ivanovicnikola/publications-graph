@@ -25,7 +25,7 @@ public class PartC_ZivkovicIvanovic implements AutoCloseable{
                     WITH j, c, COUNT(DISTINCT a) AS cnt
                     MATCH (j)<-[:PUBLISHED_IN]-(a:Article)
                     WITH j, c, cnt, COUNT(a) AS total
-                    WHERE cnt/total >= 0.9
+                    WHERE cnt*1.0/total >= 0.9
                     CREATE (j)-[:BELONGS_TO]->(c)
                     """);
         }
@@ -39,7 +39,7 @@ public class PartC_ZivkovicIvanovic implements AutoCloseable{
                     WITH conf, c, COUNT(DISTINCT i) AS cnt
                     MATCH (conf)<-[:PART_OF]-(p:Proceeding)<-[:PUBLISHED_IN]-(i:Inproceeding)
                     WITH conf, c, cnt, COUNT(i) AS total
-                    WHERE cnt/total >= 0.9
+                    WHERE cnt*1.0/total >= 0.9
                     CREATE (conf)-[:BELONGS_TO]->(c)
                     """);
         }
