@@ -57,6 +57,29 @@ public class PartB1_ZivkovicIvanovic implements AutoCloseable {
         }
     }
 
+    public void executeQuery3() {
+        System.out.println("Executing query 3...");
+        try (Session session = driver.session()) {
+
+            Result result = session.run("""
+                    MATCH (article:Article)-[:PUBLISHED_IN]->(journal:Journal)
+                    WITH journal, article.year AS year, COLLECT(article) AS articleList
+                    MATCH (article:Article)-[:PUBLISHED_IN]->(journal)
+                    WHERE article.year = year - 1
+                    WITH journal, year, articleList, COLLECT(article) AS previousArticleList
+                    MATCH (p:Article|Inproceeding)-[c:CITES]->(a:Article)-[:PUBLISHED_IN]->(journal)
+                    WHERE p.year = year + 1 AND (a IN articleList + previousArticleList)
+                    WITH journal, p.year as Year, COUNT(c) AS citations, size(articleList + previousArticleList) AS numberOfArticles
+                    RETURN journal.journal AS Journal, Year, citations*1.0/numberOfArticles AS Impact_factor, citations, numberOfArticles
+                    """);
+            while (result.hasNext()) {
+                Record record = result.next();
+                System.out.println("Journal: " + record.get("Journal").asString() + ", Year: " + record.get("Year").asInt() + ", Impact factor: " + record.get("Impact_factor").asDouble());
+            }
+        }
+    }
+
+
     public void executeQuery4() {
         System.out.println("Executing query 4...");
         try (Session session = driver.session())
@@ -81,6 +104,7 @@ public class PartB1_ZivkovicIvanovic implements AutoCloseable {
         try(var loader = new PartB1_ZivkovicIvanovic("bolt://localhost:7687", "", "")) {
             loader.executeQuery1();
             loader.executeQuery2();
+            loader.executeQuery3();
             loader.executeQuery4();
         }
     }
