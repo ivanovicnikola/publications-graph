@@ -3,6 +3,13 @@ package org.example;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.Query;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.Scanner;
+
+import static org.neo4j.driver.Values.parameters;
 
 public class PartA2_ZivkovicIvanovic implements AutoCloseable {
     private final Driver driver;
@@ -64,6 +71,13 @@ public class PartA2_ZivkovicIvanovic implements AutoCloseable {
                         CREATE CONSTRAINT conferenceConstraint IF NOT EXISTS
                         FOR (conference:Conference)
                         REQUIRE conference.conference IS UNIQUE
+                        """);
+            });
+            session.executeWriteWithoutResult(tx -> {
+                tx.run("""
+                        CREATE CONSTRAINT keywordConstraint IF NOT EXISTS
+                        FOR (keyword:Keyword)
+                        REQUIRE keyword.keyword IS UNIQUE
                         """);
             });
         }
@@ -169,6 +183,28 @@ public class PartA2_ZivkovicIvanovic implements AutoCloseable {
         }
     }
 
+    public void loadKeywords() {
+        System.out.println("Loading keywords...");
+        ClassLoader classLoader = getClass().getClassLoader();
+        File file = new File(classLoader.getResource("keywords.csv").getFile());
+        Scanner myReader = null;
+        try {
+            myReader = new Scanner(file);
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        while (myReader.hasNextLine()) {
+            String data = myReader.nextLine();
+            String[] line = data.split(",");
+            try (var session = driver.session()) {
+                session.executeWriteWithoutResult(tx -> {
+                    var query = new Query("CREATE (:Keyword {community: $community, keyword: $keyword})", parameters("community", line[0], "keyword", line[1]));
+                    tx.run(query);
+                });
+            }
+        }
+    }
+
     public static void main(String... args) {
         try (var loader = new PartA2_ZivkovicIvanovic("bolt://localhost:7687", "", "")) {
             loader.createConstraints();
@@ -177,6 +213,7 @@ public class PartA2_ZivkovicIvanovic implements AutoCloseable {
             loader.loadInproceedings();
             loader.generateReviews();
             loader.generateCitations();
+            loader.loadKeywords();
         }
     }
 }
