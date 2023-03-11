@@ -82,6 +82,13 @@ public class PartA2_ZivkovicIvanovic implements AutoCloseable {
                         REQUIRE keyword.keyword IS UNIQUE
                         """);
             });
+            session.executeWriteWithoutResult(tx -> {
+                tx.run("""
+                        CREATE CONSTRAINT communityConstraint IF NOT EXISTS
+                        FOR (community:Community)
+                        REQUIRE community.community IS UNIQUE
+                        """);
+            });
         }
     }
 
@@ -200,7 +207,11 @@ public class PartA2_ZivkovicIvanovic implements AutoCloseable {
             String[] line = data.split(",");
             try (var session = driver.session()) {
                 session.executeWriteWithoutResult(tx -> {
-                    var query = new Query("CREATE (:Keyword {community: $community, keyword: $keyword})", parameters("community", line[0], "keyword", line[1]));
+                    var query = new Query("""
+                            MERGE (c:Community {community: $community})
+                            CREATE (k:Keyword {keyword: $keyword})
+                            CREATE (k)<-[:DEFINED_BY]-(c)
+                            """, parameters("community", line[0], "keyword", line[1]));
                     tx.run(query);
                 });
             }
