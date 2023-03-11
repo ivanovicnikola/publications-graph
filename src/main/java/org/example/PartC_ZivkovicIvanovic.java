@@ -71,20 +71,17 @@ public class PartC_ZivkovicIvanovic implements AutoCloseable{
     public void callPageRank() {
         System.out.println("Performing page rank...");
         try (var session = driver.session()) {
-            Result result = session.run("""
+            session.run("""
                     CALL gds.pageRank.stream(
                         'papers'
                     )
                     YIELD nodeId, score
-                    RETURN gds.util.asNode(nodeId).key AS key, score
-                    ORDER BY score DESC, key ASC\s
+                    WITH gds.util.asNode(nodeId) AS paper, score
+                    ORDER BY score DESC, paper ASC
                     LIMIT 100
+                    MATCH (c:Community{community:'database'})
+                    CREATE (paper)-[:TOP_PAPER]->(c)
                     """);
-            while (result.hasNext())
-            {
-                Record record = result.next();
-                System.out.println("key: " +  record.get("key").asString() + ", score: " + record.get("score").asDouble());
-            }
         }
     }
 
