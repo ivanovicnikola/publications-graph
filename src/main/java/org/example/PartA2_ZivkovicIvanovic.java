@@ -18,6 +18,8 @@ public class PartA2_ZivkovicIvanovic implements AutoCloseable {
     private static final int PROCEEDING_LIMIT = 500;
     private static final int MIN_CITATIONS = 0;
     private static final int MAX_CITATIONS = 10;
+    private static final int MIN_KEYWORDS = 3;
+    private static final int MAX_KEYWORDS = 5;
 
     public PartA2_ZivkovicIvanovic(String uri, String user, String password) {
         this.driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password));
@@ -205,6 +207,23 @@ public class PartA2_ZivkovicIvanovic implements AutoCloseable {
         }
     }
 
+    public void relateKeywords() {
+        System.out.println("Relating random keywords...");
+        try (var session = driver.session()) {
+            session.run(String.format("""
+                        MATCH (k:Keyword)
+                        WITH collect(k) as keywords
+                        CALL {
+                            WITH keywords
+                            MATCH (p:Article|Inproceeding)
+                            WITH p, apoc.coll.randomItems(keywords, apoc.coll.randomItem(range(%d, %d))) as keywords
+                            FOREACH (keyword IN keywords | CREATE (p)-[:HAS_KEYWORD]->(keyword))
+                        }
+                        IN TRANSACTIONS
+                        """, MIN_KEYWORDS, MAX_KEYWORDS));
+        }
+    }
+
     public static void main(String... args) {
         try (var loader = new PartA2_ZivkovicIvanovic("bolt://localhost:7687", "", "")) {
             loader.createConstraints();
@@ -214,6 +233,7 @@ public class PartA2_ZivkovicIvanovic implements AutoCloseable {
             loader.generateReviews();
             loader.generateCitations();
             loader.loadKeywords();
+            loader.relateKeywords();
         }
     }
 }
