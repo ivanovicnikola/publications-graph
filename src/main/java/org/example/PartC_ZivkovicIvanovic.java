@@ -85,12 +85,36 @@ public class PartC_ZivkovicIvanovic implements AutoCloseable{
         }
     }
 
+    public void relateGoodMatches() {
+        System.out.println("Relating good matches");
+        try (var session = driver.session()) {
+            session.run("""
+                    MATCH (a:Author)<-[:AUTHORED_BY]-(p)-[r:TOP_PAPER]->(c:Community{community:'database'})
+                    MERGE (a)-[:GOOD_MATCH]->(c)
+                    """);
+        }
+    }
+
+    public void relateGurus() {
+        System.out.println("Relating gurus");
+        try (var session = driver.session()) {
+            session.run("""
+                    MATCH (a:Author)<-[:AUTHORED_BY]-(p)-[r:TOP_PAPER]->(c:Community{community:'database'})
+                    WITH a, c, COUNT(p) AS cnt
+                    WHERE cnt > 1
+                    CREATE (a)-[:GURU]->(c)
+                    """);
+        }
+    }
+
     public static void main(String... args) {
         try(var loader = new PartC_ZivkovicIvanovic("bolt://localhost:7687", "", "")) {
             loader.findJournalCommunity();
             loader.findConferenceCommunity();
             loader.createCommunitySubgraph();
             loader.callPageRank();
+            loader.relateGoodMatches();
+            loader.relateGurus();
         }
     }
 }
