@@ -3,11 +3,11 @@ package org.example;
 import org.neo4j.driver.*;
 import org.neo4j.driver.Record;
 
-public class PartB1_ZivkovicIvanovic implements AutoCloseable {
+public class PartB_ZivkovicIvanovic implements AutoCloseable {
 
     private Driver driver;
 
-    public PartB1_ZivkovicIvanovic(String uri, String user, String password) {
+    public PartB_ZivkovicIvanovic(String uri, String user, String password) {
         this.driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password));
     }
 
@@ -101,7 +101,7 @@ public class PartB1_ZivkovicIvanovic implements AutoCloseable {
     }
 
     public static void main(String... args) {
-        try(var loader = new PartB1_ZivkovicIvanovic("bolt://localhost:7687", "", "")) {
+        try(var loader = new PartB_ZivkovicIvanovic("bolt://localhost:7687", "", "")) {
             loader.executeQuery1();
             loader.executeQuery2();
             loader.executeQuery3();
