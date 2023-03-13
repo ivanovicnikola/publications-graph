@@ -90,7 +90,7 @@ public class PartC_ZivkovicIvanovic implements AutoCloseable{
         try (var session = driver.session()) {
             session.run("""
                     MATCH (a:Author)<-[:AUTHORED_BY]-(p)-[r:TOP_PAPER]->(c:Community{community:'database'})
-                    MERGE (a)-[:GOOD_MATCH]->(c)
+                    CREATE (a)-[:GOOD_MATCH]->(c)
                     """);
         }
     }
@@ -107,6 +107,15 @@ public class PartC_ZivkovicIvanovic implements AutoCloseable{
         }
     }
 
+    public void dropSubgraph() {
+        System.out.println("Dropping subgraph...");
+        try (var session = driver.session()) {
+            session.run("""
+                    CALL gds.graph.drop('papers')
+                    """);
+        }
+    }
+
     public static void main(String... args) {
         try(var loader = new PartC_ZivkovicIvanovic("bolt://localhost:7687", "", "")) {
             loader.findJournalCommunity();
@@ -115,6 +124,7 @@ public class PartC_ZivkovicIvanovic implements AutoCloseable{
             loader.callPageRank();
             loader.relateGoodMatches();
             loader.relateGurus();
+            loader.dropSubgraph();
         }
     }
 }
