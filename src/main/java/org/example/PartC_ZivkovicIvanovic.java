@@ -90,7 +90,7 @@ public class PartC_ZivkovicIvanovic implements AutoCloseable{
         try (var session = driver.session()) {
             session.run("""
                     MATCH (a:Author)<-[:AUTHORED_BY]-(p)-[r:TOP_PAPER]->(c:Community{community:'database'})
-                    CREATE (a)-[:GOOD_MATCH]->(c)
+                    MERGE (a)-[:GOOD_MATCH]->(c)
                     """);
         }
     }
